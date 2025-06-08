@@ -1,0 +1,16 @@
+{
+  "_checkout": null,
+  "_output_dir": "/Users/antonellaschiavoni/Documents/Antonella/train-ai",
+  "_repo_dir": "/Users/antonellaschiavoni/.cookiecutters/cookiecutter-hypermodern-python",
+  "_template": "https://github.com/cjolowicz/cookiecutter-hypermodern-python.git",
+  "author": "Antonella Schiavoni",
+  "copyright_year": "2025",
+  "development_status": "Development Status :: 1 - Planning",
+  "email": "antonellaschiavoni2@gmail.com",
+  "friendly_name": "Train Ai",
+  "github_user": "antonella-schiavoni",
+  "license": "MIT",
+  "package_name": "train_ai",
+  "project_name": "train-ai",
+  "version": "0.0.0"
+}
