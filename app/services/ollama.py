@@ -42,63 +42,34 @@ class OllamaService:
                 logger.error(f"Failed to connect to Ollama: {e}")
                 raise Exception(f"Failed to connect to Ollama: {e}")
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
-        """Send a chat message to Ollama."""
-        model = request.model or self.default_model
+    async def chat_with_system(
+        self,
+        messages: List[dict],
+        model: str = None,
+        temperature: float = None,
+        max_tokens: int = None,
+    ) -> ChatResponse:
+        """Send structured messages (system + user) to Ollama using chat API."""
+        model = model or self.default_model
 
         data = {
             "model": model,
-            "prompt": request.message,
-            "stream": request.stream,
+            "messages": messages,  # [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
+            "stream": False,
         }
 
         # Add optional parameters if provided
-        if request.temperature is not None:
-            data["options"] = data.get("options", {})
-            data["options"]["temperature"] = request.temperature
+        if temperature is not None or max_tokens is not None:
+            data["options"] = {}
+            if temperature is not None:
+                data["options"]["temperature"] = temperature
+            if max_tokens is not None:
+                data["options"]["num_predict"] = max_tokens
 
-        if request.max_tokens is not None:
-            data["options"] = data.get("options", {})
-            data["options"]["num_predict"] = request.max_tokens
-
-        response_data = await self._make_request("api/generate", data)
-
-        return ChatResponse(
-            response=response_data.get("response", ""),
-            model=response_data.get("model", model),
-            created_at=response_data.get("created_at", ""),
-            done=response_data.get("done", True),
-            total_duration=response_data.get("total_duration"),
-            load_duration=response_data.get("load_duration"),
-            prompt_eval_count=response_data.get("prompt_eval_count"),
-            prompt_eval_duration=response_data.get("prompt_eval_duration"),
-            eval_count=response_data.get("eval_count"),
-            eval_duration=response_data.get("eval_duration"),
-        )
-
-    async def generate(self, request: GenerateRequest) -> ChatResponse:
-        """Generate text from a prompt."""
-        model = request.model or self.default_model
-
-        data = {
-            "model": model,
-            "prompt": request.prompt,
-            "stream": request.stream,
-        }
-
-        # Add optional parameters if provided
-        if request.temperature is not None:
-            data["options"] = data.get("options", {})
-            data["options"]["temperature"] = request.temperature
-
-        if request.max_tokens is not None:
-            data["options"] = data.get("options", {})
-            data["options"]["num_predict"] = request.max_tokens
-
-        response_data = await self._make_request("api/generate", data)
+        response_data = await self._make_request("api/chat", data)
 
         return ChatResponse(
-            response=response_data.get("response", ""),
+            response=response_data.get("message", {}).get("content", ""),
             model=response_data.get("model", model),
             created_at=response_data.get("created_at", ""),
             done=response_data.get("done", True),
