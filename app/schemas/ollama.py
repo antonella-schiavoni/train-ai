@@ -55,19 +55,38 @@ class ChatResponse(BaseModel):
 
 
 class GenerateRequest(BaseModel):
-    """Request schema for generate endpoint."""
+    """Request schema for workout generation endpoint."""
 
-    prompt: str = Field(..., description="Text prompt")
-    model: Optional[str] = Field(
-        None, description="Model to use (defaults to configured model)"
+    age: int = Field(..., description="Age in years")
+    height: int = Field(..., description="Height in centimeters")
+    weight: int = Field(..., description="Weight in kilograms")
+    physical_condition: str = Field(..., description="Current physical condition")
+    sessions_per_week: int = Field(
+        ..., description="Number of workout sessions per week"
     )
-    temperature: Optional[float] = Field(
-        None, ge=0.0, le=2.0, description="Temperature for response generation"
+    workout_time: int = Field(..., description="Workout duration in minutes")
+    available_machines: List[str] = Field(
+        ..., description="List of available gym machines/equipment"
     )
-    max_tokens: Optional[int] = Field(
-        None, ge=1, le=4000, description="Maximum tokens in response"
-    )
-    stream: bool = Field(False, description="Whether to stream the response")
+
+    class Config:
+        """Example request schema."""
+
+        schema_extra = {
+            "example": {
+                "age": 32,
+                "height": 165,
+                "weight": 92,
+                "physical_condition": "overweight",
+                "sessions_per_week": 3,
+                "workout_time": 90,
+                "available_machines": [
+                    "rear kick",
+                    "hip trust",
+                    "leg standing curl",
+                ],
+            }
+        }
 
 
 class ModelInfo(BaseModel):
