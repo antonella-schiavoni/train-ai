@@ -7,7 +7,7 @@ import json
 import logging
 
 from app.core.config import settings
-from app.schemas.ollama import ChatRequest, ChatResponse, GenerateRequest, ModelInfo
+from app.schemas.ollama import ChatRequest, ChatResponse, ModelInfo
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ class OllamaService:
         model: str = None,
         temperature: float = None,
         max_tokens: int = None,
+        format_schema: dict = None,
     ) -> ChatResponse:
         """Send structured messages (system + user) to Ollama using chat API."""
         model = model or self.default_model
@@ -57,6 +58,10 @@ class OllamaService:
             "messages": messages,  # [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
             "stream": False,
         }
+
+        # Add structured output format if provided
+        if format_schema:
+            data["format"] = format_schema
 
         # Add optional parameters if provided
         if temperature is not None or max_tokens is not None:
