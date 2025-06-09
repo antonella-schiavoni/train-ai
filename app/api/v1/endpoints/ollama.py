@@ -3,6 +3,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 import logging
+import json
+import re
 
 from app.schemas.ollama import (
     ChatRequest,
@@ -10,6 +12,7 @@ from app.schemas.ollama import (
     ModelInfo,
     ModelsResponse,
     ErrorResponse,
+    WorkoutPlan,
 )
 from app.services.ollama import ollama_service
 from app.services.agenta import agenta_service
@@ -19,7 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ollama", tags=["ollama"])
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat", response_model=WorkoutPlan)
 async def chat(request: ChatRequest):
     """
     Generate a workout plan based on user parameters.
@@ -40,31 +43,68 @@ async def chat(request: ChatRequest):
         # Get structured messages from Agenta
         messages = await agenta_service.get_messages()
 
-        # Construct user message from workout parameters
-        machines_list = ", ".join(request.available_machines)
-        user_message = f"""
-Please create a personalized workout plan with the following specifications:
+        # Template the user message with actual data
+        user_template = None
+        system_message = None
 
-- Age: {request.age} years
-- Height: {request.height} cm
-- Weight: {request.weight} kg
-- Physical condition: {request.physical_condition}
-- Sessions per week: {request.sessions_per_week}
-- Workout duration: {request.workout_time} minutes
+        # Extract system and user messages from Agenta
+        for msg in messages:
+            if msg["role"] == "system":
+                system_message = msg
+            elif msg["role"] == "user":
+                user_template = msg["content"]
 
-Available machines/equipment:
-{machines_list}
+        if not user_template:
+            raise ValueError("No user message template found in Agenta configuration")
 
-Please provide a detailed workout plan that includes exercises, sets, reps, and rest periods.
-""".strip()
+        # Use safe string replacement to avoid conflicts with JSON braces
+        templated_user_message = user_template
 
-        # Add user message to the conversation
-        messages.append({"role": "user", "content": user_message})
+        # Replace template placeholders (use {{variable}} format to avoid JSON conflicts)
+        replacements = {
+            "{{age}}": str(request.age),
+            "{{height}}": str(request.height),
+            "{{weight}}": str(request.weight),
+            "{{physical_condition}}": request.physical_condition,
+            "{{sessions_per_week}}": str(request.sessions_per_week),
+            "{{workout_time}}": str(request.workout_time),
+            "{{available_machines}}": ", ".join(request.available_machines),
+        }
+
+        for placeholder, value in replacements.items():
+            templated_user_message = templated_user_message.replace(placeholder, value)
+
+        logger.debug(f"Templated user message: {templated_user_message}")
+
+        # Build final messages array
+        final_messages = []
+        if system_message:
+            final_messages.append(system_message)
+        final_messages.append({"role": "user", "content": templated_user_message})
+
+        # Use structured outputs with Pydantic schema
+        workout_schema = WorkoutPlan.model_json_schema()
 
         response = await ollama_service.chat_with_system(
-            messages, request.model, request.temperature, request.max_tokens
+            final_messages,
+            request.model,
+            request.temperature,
+            request.max_tokens,
+            format_schema=workout_schema,
         )
-        return response
+
+        # Parse the JSON response and return as structured data
+        try:
+            workout_data = json.loads(response.response)
+            workout_plan = WorkoutPlan(**workout_data)
+            logger.info("Successfully parsed workout plan from Ollama response")
+            return workout_plan
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Failed to parse workout plan JSON: {e}")
+            raise HTTPException(
+                status_code=500, detail="Failed to parse workout plan from AI response"
+            )
+
     except Exception as e:
         logger.error(f"Chat endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
