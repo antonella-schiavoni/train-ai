@@ -1,11 +1,20 @@
 """Main FastAPI application entry point."""
 
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
+import agenta as ag
 
 from app.core.config import settings
+
+# Configure logging for the entire application
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL.upper()),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
 from app.api.v1.router import router as api_v1_router
 
 # Create FastAPI app using settings
@@ -29,6 +38,8 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(api_v1_router)
+
+ag.init()
 
 
 @app.get("/")
