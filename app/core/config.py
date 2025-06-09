@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     # Optional fields with sensible defaults
     DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     RELOAD: bool = False
