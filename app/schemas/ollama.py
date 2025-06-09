@@ -1,6 +1,6 @@
 """Pydantic schemas for Ollama API endpoints."""
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
 
 
@@ -9,6 +9,48 @@ class ChatMessage(BaseModel):
 
     role: str = Field(..., description="Message role (user, assistant, system)")
     content: str = Field(..., description="Message content")
+
+
+class Exercise(BaseModel):
+    """Individual exercise model."""
+
+    machine: str = Field(..., description="Gym machine or equipment used")
+    exercise_name: str = Field(..., description="Name of the exercise")
+    sets: int = Field(..., description="Number of sets")
+    reps: int = Field(..., description="Number of repetitions per set")
+    duration_minutes: int = Field(..., description="Duration in minutes")
+    intensity: Literal["Low", "Medium", "High"] = Field(
+        ..., description="Exercise intensity level"
+    )
+
+
+class WorkoutDay(BaseModel):
+    """Daily workout routine model."""
+
+    day: str = Field(..., description="Day of the week")
+    exercises: List[Exercise] = Field(..., description="List of exercises for this day")
+
+
+class UserProfile(BaseModel):
+    """User profile information."""
+
+    age: int = Field(..., description="Age in years")
+    weight: int = Field(..., description="Weight in kilograms")
+    height: int = Field(..., description="Height in centimeters")
+    physical_condition: str = Field(..., description="Current physical condition")
+    training_frequency: int = Field(
+        ..., description="Number of training sessions per week"
+    )
+    workout_time_per_session: int = Field(
+        ..., description="Workout duration per session in minutes"
+    )
+
+
+class WorkoutPlan(BaseModel):
+    """Complete workout plan response model."""
+
+    user_profile: UserProfile = Field(..., description="User profile information")
+    weekly_routine: List[WorkoutDay] = Field(..., description="Weekly workout routine")
 
 
 class ChatRequest(BaseModel):
