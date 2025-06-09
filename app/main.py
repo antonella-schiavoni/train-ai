@@ -6,6 +6,7 @@ import uvicorn
 import os
 
 from app.core.config import settings
+from app.api.v1.router import router as api_v1_router
 
 # Create FastAPI app using settings
 app = FastAPI(
@@ -25,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(api_v1_router)
 
 
 @app.get("/")
